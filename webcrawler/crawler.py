@@ -2,6 +2,7 @@ from trafilatura.spider import extract_links
 from urllib.parse import urlsplit
 from collections import deque
 from protego import Protego
+from pathlib import Path
 import trafilatura
 import requests
 import random
@@ -26,14 +27,17 @@ def get_robots(robots_url: str) -> Protego:
 
     return Protego.parse(response.text)
 
+def clear_data():
+    for element in Path('data/').iterdir():
+        if element.is_file(): element.unlink()
+
 def crawl(seeds: list[str]) -> None:
     index = 0
     robots = dict()
     visited = set()
     queue = deque(seeds)
 
-    with open(f'data/description.txt', "w", encoding="utf-8") as file:
-        file.write('')
+    clear_data()
 
     while queue:
         url = queue.popleft()
