@@ -10,7 +10,7 @@ class Analyzer:
         self.stop_words = get_stop_words()
         self.stemmer = PorterStemmer()
 
-    def __call__(self, text):
+    def __call__(self, text: str):
         tokens = []
 
         for token in re.findall(r"\b\w+\b", text):
@@ -26,6 +26,7 @@ def get_stop_words() -> set[str]:
         with open('model/stop_words_english.txt', 'r') as f:
             for line in f.readlines():
                 stop_words.add(line.strip())
+                
     except FileNotFoundError:
         print("Nie znaleziono pliku")
     except UnicodeDecodeError:
@@ -78,6 +79,8 @@ def save_model(text: list[str], metadata: list[tuple[str, str]]) -> None:
     except Exception as e:
         print("Błąd zapisu modelu: ", e)
 
+    print("Zapisano model")
+
 def load_model(k: int) -> tuple[TfidfVectorizer, NDArray[np.float64], list[tuple[str, str]]]:
     try:
         svd = np.load("model/saved/svd.npz")
@@ -93,14 +96,16 @@ def load_model(k: int) -> tuple[TfidfVectorizer, NDArray[np.float64], list[tuple
     norms = np.linalg.norm(matrix, axis=0)
     return matrix / norms, vectorizer, metadata
 
-def get_search(text: str, matrix: NDArray[np.float64], vectorizer: TfidfVectorizer, metadata: list[tuple[str, str]]):
+def get_search(text: str, n: int, matrix: NDArray[np.float64], vectorizer: TfidfVectorizer, metadata: list[tuple[str, str]]) -> list[tuple[str, str]]:
     q = vectorizer.transform([text]).toarray()
     dot_products = np.squeeze(q @ matrix)
-    print(np.partition(dot_products, -5)[-5:])
-    return np.argpartition(dot_products, -5)[-5:]
+
+    partition = np.argpartition(dot_products, -n)[-n:]
+    indicies = partition[np.argsort(dot_products[partition])[::-1]]
+    return [metadata[i] for i in indicies]
 
 if __name__ == "__main__":
-    text, titles, urls = get_search_data()
-    save_model(text, zip(titles, urls))
-    matrix, vectorizer, metadata = load_model(10)
-    print(get_search("Apollo program", matrix, vectorizer, metadata))
+    #text, titles, urls = get_search_data()
+    #save_model(text, list(zip(titles, urls)))
+    matrix, vectorizer, metadata = load_model(800)
+    print(get_search("Google corporation ", 5, matrix, vectorizer, metadata))

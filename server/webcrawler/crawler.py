@@ -31,13 +31,33 @@ def clear_data():
     for element in Path('data/').iterdir():
         if element.is_file(): element.unlink()
 
-def crawl(seeds: list[str]) -> None:
+def get_crawled_data() -> tuple[int, set[str]]:
+    visited = set()
+    index = 0
+
+    try:
+        with open('data/description.txt', 'r', encoding='utf-8') as f:
+            for line in f.readlines():
+                file, title, url = line.split('|')
+                visited.add(url.strip())
+                index = int(file)
+
+    except FileNotFoundError:
+        print("Nie znaleziono pliku")
+    except UnicodeDecodeError:
+        print("Złe kodowanie")
+
+    return index + 1, visited
+
+def crawl(seeds: list[str], load_data=False) -> None:
     index = 0
     robots = dict()
     visited = set()
     queue = deque(seeds)
 
-    clear_data()
+    if load_data:
+        index, visited = get_crawled_data()
+    else: clear_data()
 
     while queue:
         url = queue.popleft()
@@ -79,5 +99,5 @@ def crawl(seeds: list[str]) -> None:
         index += 1
         
 if __name__ == "__main__":
-    seeds = ['https://en.wikipedia.org/wiki/Apollo_program']
-    crawl(seeds)
+    seeds = ['https://en.wikipedia.org/wiki/Kanye_West']
+    crawl(seeds, load_data=True)
