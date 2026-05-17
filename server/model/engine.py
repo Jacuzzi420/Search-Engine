@@ -81,7 +81,7 @@ def save_model(text: list[str], metadata: list[tuple[str, str]]) -> None:
 
     print("Zapisano model")
 
-def load_model(k: int) -> tuple[TfidfVectorizer, NDArray[np.float64], list[tuple[str, str]]]:
+def load_model(k: int) -> tuple[NDArray[np.float64], TfidfVectorizer, list[tuple[str, str]]]:
     try:
         svd = np.load("model/saved/svd.npz")
         vectorizer = joblib.load("model/saved/tfidf_vectorizer.pkl")
@@ -96,16 +96,14 @@ def load_model(k: int) -> tuple[TfidfVectorizer, NDArray[np.float64], list[tuple
     norms = np.linalg.norm(matrix, axis=0)
     return matrix / norms, vectorizer, metadata
 
-def get_search(text: str, n: int, matrix: NDArray[np.float64], vectorizer: TfidfVectorizer, metadata: list[tuple[str, str]]) -> list[tuple[str, str]]:
+def get_search(text: str, n: int, matrix: NDArray[np.float64], vectorizer: TfidfVectorizer, metadata: list[tuple[str, str]]) -> dict[str, list[tuple[str, str]]]:
     q = vectorizer.transform([text]).toarray()
     dot_products = np.squeeze(q @ matrix)
 
     partition = np.argpartition(dot_products, -n)[-n:]
     indicies = partition[np.argsort(dot_products[partition])[::-1]]
-    return [metadata[i] for i in indicies]
+    return { 'results': [metadata[i] for i in indicies] }
 
 if __name__ == "__main__":
-    #text, titles, urls = get_search_data()
-    #save_model(text, list(zip(titles, urls)))
     matrix, vectorizer, metadata = load_model(800)
     print(get_search("Google corporation ", 5, matrix, vectorizer, metadata))

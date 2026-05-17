@@ -1,13 +1,20 @@
 import { useState } from 'react'
+import axios from 'axios'
 import './SearchBar.css'
 import SearchIcon from './search.png'
 
 export default function SearchBar({ setResult }) {
     const [search, setSearch] = useState('')
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault()
-        console.log('subimitted')
+
+        try {
+            const { data } = await axios.get(`http://localhost:8000/search?query=${search.split(' ').join('+')}`)
+            setResult(data)
+        } catch(error) {
+            console.log(error)
+        }
     }
 
     function handleChange(e) {
