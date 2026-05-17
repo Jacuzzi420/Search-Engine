@@ -96,13 +96,13 @@ def load_model(k: int) -> tuple[NDArray[np.float64], TfidfVectorizer, list[tuple
     norms = np.linalg.norm(matrix, axis=0)
     return matrix / norms, vectorizer, metadata
 
-def get_search(text: str, n: int, matrix: NDArray[np.float64], vectorizer: TfidfVectorizer, metadata: list[tuple[str, str]]) -> dict[str, list[tuple[str, str]]]:
+def get_search(text: str, n: int, matrix: NDArray[np.float64], vectorizer: TfidfVectorizer, metadata: list[tuple[str, str]]) -> list[tuple[str, str]]:
     q = vectorizer.transform([text]).toarray()
     dot_products = np.squeeze(q @ matrix)
 
     partition = np.argpartition(dot_products, -n)[-n:]
     indicies = partition[np.argsort(dot_products[partition])[::-1]]
-    return { 'results': [metadata[i] for i in indicies] }
+    return [metadata[i] for i in indicies]
 
 if __name__ == "__main__":
     matrix, vectorizer, metadata = load_model(800)

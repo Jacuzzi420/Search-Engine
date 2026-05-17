@@ -1,12 +1,13 @@
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import VectorParams, Distance
+from chonkie import RecursiveChunker
 from engine import get_search_data
 from uuid import uuid4
 import ollama
 
 def init() -> None:
     client = QdrantClient("localhost", port=6333)
-    
+
     client.create_collection(
         collection_name="search-engine",
         vectors_config=VectorParams(
@@ -25,21 +26,24 @@ def drop() -> None:
     client = QdrantClient("localhost", port=6333)
     client.delete_collection("search-engine")
 
-#todo
-def make_chunks(text: str) -> list[str]:
-    pass
-
 def vectorize() -> None:
     text, titles, urls = get_search_data()
     points = []
 
-    for index, (content, title, url) in enumerate(zip(text, titles, urls)):
-        print(f"Processing website {index}")
+    chunker = RecursiveChunker(
+        tokenizer="nomic-ai/nomic-embed-text-v1",
+        chunk_size=512
+    )
 
-        for chunk in make_chunks(content):
+    client = QdrantClient("localhost", port=6333)
+
+    for index, (content, title, url) in enumerate(zip(text, titles, urls)):
+        print(f"Processing document {index}")
+
+        for chunk in chunker.chunk(content):
             emb = ollama.embeddings(
                 model="nomic-embed-text",
-                prompt=chunk
+                prompt=chunk.text
             )["embedding"]
 
             points.append({
@@ -51,12 +55,18 @@ def vectorize() -> None:
                 }
             })
 
-    client = QdrantClient("localhost", port=6333)
+        if index % 10 == 0:
+            client.upsert(
+                collection_name="search-engine",
+                points=points,
+            )
+            points.clear()
 
-    client.upsert(
-        collection_name="search-engine",
-        points=points,
-    )
+    if points:
+        client.upsert(
+            collection_name="search-engine",
+            points=points,
+        )
 
 if __name__ == "__main__":
     vectorize()
