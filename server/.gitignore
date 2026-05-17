@@ -2,3 +2,5 @@
 __pycache__
 data
 model/saved
+model/__pycache__
+webcrawler/__pycache__

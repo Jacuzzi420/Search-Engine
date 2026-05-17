@@ -4,7 +4,7 @@ import SearchBar from '../SearchBar/SearchBar'
 import SearchResult from '../SearchResult/SearchResult'
 
 export default function App() {
-  const [result, setResult] = useState({})
+  const [result, setResult] = useState({ results: [] })
 
   return (
     <div className='main-wrapper'>

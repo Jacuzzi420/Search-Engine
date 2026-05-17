@@ -12,6 +12,7 @@ export default function SearchBar({ setResult }) {
         try {
             const { data } = await axios.get(`http://localhost:8000/search?query=${search.split(' ').join('+')}`)
             setResult(data)
+            console.log(data)
         } catch(error) {
             console.log(error)
         }
