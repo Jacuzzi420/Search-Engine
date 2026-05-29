@@ -40,7 +40,7 @@ Oczywiście wektor $q$ jest normalizowany, oraz wektory odpowiadające dokumento
 
 Model TF-IDF z SVD wspieram również semantycznimi embeddingami.
 
-Najpierw chunkuje wszystkie dokumenty rekurencyjnie (całe dokumenty przekraczały limit tokenów), a następnie wektoryzuje chunki za pomocą modeleu `nomic-embed-text`.
+Najpierw chunkuje wszystkie dokumenty rekurencyjnie (całe dokumenty przekraczały limit tokenów), a następnie wektoryzuje chunki za pomocą modeleu `nomic-embed-text`. Do rekurencyjnego chunkowania skorzystałem z RecursiveChunker z biblioteki `chonkie`.
 
 Do przechowywania wektorów wybrałem bazę wektorową Qdrant.
 
