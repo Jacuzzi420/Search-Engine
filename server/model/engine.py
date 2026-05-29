@@ -1,6 +1,8 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.stem.porter import PorterStemmer
 from numpy.typing import NDArray
+from scipy.sparse.linalg import svds
+from scipy import sparse
 import numpy as np
 import joblib
 import re
@@ -69,11 +71,10 @@ def get_search_data() -> tuple[list[str], list[str], list[str]]:
 def save_model(text: list[str], metadata: list[tuple[str, str]]) -> None:
     analyzer = Analyzer()
     vectorizer = TfidfVectorizer(analyzer=analyzer)
-    X = vectorizer.fit_transform(text).toarray().transpose()
-    U, S, Vt = np.linalg.svd(X, full_matrices=False)
+    X = vectorizer.fit_transform(text)
 
     try:
-        np.savez("model/saved/svd.npz", U=U, S=S, Vt=Vt)
+        sparse.save_npz("model/saved/matrix.npz", X)
         joblib.dump(vectorizer, "model/saved/tfidf_vectorizer.pkl")
         joblib.dump(metadata, "model/saved/metadata.pkl")
     except Exception as e:
@@ -81,29 +82,34 @@ def save_model(text: list[str], metadata: list[tuple[str, str]]) -> None:
 
     print("Zapisano model")
 
-def load_model(k: int) -> tuple[NDArray[np.float64], TfidfVectorizer, list[tuple[str, str]]]:
+def load_model(k: int) -> tuple[NDArray[np.float64], NDArray[np.float64], TfidfVectorizer, list[tuple[str, str]]]:
     try:
-        svd = np.load("model/saved/svd.npz")
+        matrix = sparse.load_npz("model/saved/matrix.npz")
         vectorizer = joblib.load("model/saved/tfidf_vectorizer.pkl")
         metadata = joblib.load("model/saved/metadata.pkl")
     except Exception as e:
         print("Błąd odczytu modelu: ", e)
 
-    U, S, Vt = svd['U'], svd['S'], svd['Vt']
-    k = min(k, S.shape[0])
+    k = min(k, min(matrix.shape))
+    U, S, Vt = svds(matrix, k)
 
-    matrix = (U[:, :k] * S[:k]) @ Vt[:k, :]
-    norms = np.linalg.norm(matrix, axis=0)
-    return matrix / norms, vectorizer, metadata
+    matrix = (matrix @ Vt.T).T
+    matrix /= np.linalg.norm(matrix, axis=0)
 
-def get_search(text: str, n: int, matrix: NDArray[np.float64], vectorizer: TfidfVectorizer, metadata: list[tuple[str, str]]) -> list[tuple[str, str]]:
-    q = vectorizer.transform([text]).toarray()
+    return matrix, Vt, vectorizer, metadata
+
+def get_search(text: str, n: int, matrix: NDArray[np.float64], Vt: NDArray[np.float64], vectorizer: TfidfVectorizer, metadata: list[tuple[str, str]]) -> list[tuple[str, str]]:    
+    q = vectorizer.transform([text])
+    data, indices = q.data, q.indices
+
+    if len(data) == 0:
+        q = np.zeros(Vt.shape[0])
+    else:
+        q = data @ Vt.T[indices]
+        q /= np.linalg.norm(q)
+
     dot_products = np.squeeze(q @ matrix)
-
     partition = np.argpartition(dot_products, -n)[-n:]
     indicies = partition[np.argsort(dot_products[partition])[::-1]]
-    return [metadata[i] for i in indicies]
 
-if __name__ == "__main__":
-    matrix, vectorizer, metadata = load_model(800)
-    print(get_search("Google corporation ", 5, matrix, vectorizer, metadata))
+    return [metadata[i] for i in indicies]

@@ -99,5 +99,5 @@ def crawl(seeds: list[str], load_data=False) -> None:
         index += 1
         
 if __name__ == "__main__":
-    seeds = ['https://en.wikipedia.org/wiki/Kanye_West']
+    seeds = ['https://en.wikipedia.org/wiki/Kendrick_Lamar']
     crawl(seeds, load_data=True)

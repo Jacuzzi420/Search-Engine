@@ -7,14 +7,15 @@ import ollama
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    matrix, vectorizer, metadata = load_model(900)
+    matrix, Vt, vectorizer, metadata = load_model(1024)
     app.qdrant = AsyncQdrantClient("localhost", port=6333)
     app.matrix = matrix
+    app.Vt = Vt
     app.vectorizer = vectorizer
     app.metadata = metadata
     app.search_number = 20
-    app.emb_weight = 0.4
-    app.svd_weight = 0.6
+    app.emb_weight = 0
+    app.svd_weight = 1
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -49,7 +50,7 @@ async def get_search_results(query: str):
         )
 
         emb_result = [(result.hits[0].payload['title'], result.hits[0].payload['url']) for result in results.groups]
-        svd_result = get_search(query, app.search_number, app.matrix, app.vectorizer, app.metadata)
+        svd_result = get_search(query, app.search_number, app.matrix, app.Vt, app.vectorizer, app.metadata)
 
         weights = {}
         for index, (emb, svd) in enumerate(zip(emb_result, svd_result)):
