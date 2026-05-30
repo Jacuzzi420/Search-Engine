@@ -7,15 +7,15 @@ import ollama
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    matrix, Vt, vectorizer, metadata = load_model(1024)
+    matrix, Vt, vectorizer, metadata = load_model(800)
     app.qdrant = AsyncQdrantClient("localhost", port=6333)
     app.matrix = matrix
     app.Vt = Vt
     app.vectorizer = vectorizer
     app.metadata = metadata
     app.search_number = 20
-    app.emb_weight = 0
-    app.svd_weight = 1
+    app.emb_weight = 0.4
+    app.svd_weight = 0.6
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -38,7 +38,7 @@ async def get_search_results(query: str):
     try:
         query_emb = ollama.embeddings(
             model="nomic-embed-text",
-            prompt=query
+            prompt=query.lower()
         )["embedding"]
 
         results = await app.qdrant.query_points_groups(
@@ -58,7 +58,7 @@ async def get_search_results(query: str):
             weights[emb] = weights.get(emb, 0) + val * app.emb_weight
             weights[svd] = weights.get(svd, 0) + val * app.svd_weight
 
-        return { 'results': [k for k, _ in sorted(weights.items(), reverse=True, key=lambda item: item[1])] }
+        return { 'results': [k for k, _ in sorted(weights.items(), reverse=True, key=lambda item: item[1])][:app.search_number] }
     except Exception as e:
         print(e)
         return { 'results': [] }

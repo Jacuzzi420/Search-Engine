@@ -11,25 +11,25 @@ Do obliczania SVD wykorzystałem funkcję svds z biblioteki `scipy`, która przy
 Ponieważ przybliżanie oryginalnej macierzy w ten sposób było zbyt kosztowne pamięciowo:
 
 $$
-A \simeq A_k = U_k D_k V^{T}
+A \simeq A_k = U_k D_k V_k^{T}
 $$
 
 zdecydowałem się na redukcję wymiarów z wykorzystaniem SVD:
 
 $$
-A_{\text{zredukowana}} = U_k D_k = A V
+A_{\text{zredukowana}} = U_k D_k = A V_k
 $$
 
-ponieważ $V$ jest ortogonalna, tzn.
+ponieważ $V_k$ jest ortogonalna, tzn.
 
 $$
-V V^{T} = I, \quad V^{T} = V^{-1}
+V_k V_k^{T} = I, \quad V_k^{T} = V_k^{-1}
 $$
 
 Stosując redukcję wymiarów, muszę również zmienić wymiar wektora zapytania, więc:
 
 $$
-q = q V
+q = q V_k
 $$
 
 Wektor $q$ jest rzadki, więc można te mnożenie zoptymalizować, co znacznie przyspieszyło zapytania do wyszukiwarki.
